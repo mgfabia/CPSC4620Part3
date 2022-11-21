@@ -141,6 +141,14 @@ public class Menu {
 		 * 
 		 * Once you get the name and phone number (and anything else your design might have) add it to the DB
 		 */
+		String Fname = "";
+		String Lname = "";
+		long phone = 0;
+		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		System.out.println("Enter the customer's first name");
+		Fname = reader.readLine();
+		System.out.println("Enter the customer's last name");
+		Lname = reader.readLine();
 		
 		
 
