@@ -125,15 +125,12 @@ public class Menu {
 		 * try (Statement statement = connection.createStatement();
                 ResultSet rs = statement.executeQuery("SELECT * FROM Product")) {
             Product p;
-
             System.out.println("Product list:");
             while (rs.next()) {
                 String code = rs.getString("Code");
                 String description = rs.getString("Description");
                 double price = rs.getDouble("ListPrice");
-
                 p = new Product(code, description, price);
-
                 printProduct(p);
             }
             System.out.println();
@@ -228,6 +225,56 @@ public class Menu {
 	 * When I enter the order, print out all the information about that order, not just the simplified view.
 	 * 
 	 */
+	 	Connection connection = DBConnector.make_connection();
+		ResultSet rs = null;
+		System.out.println("Would you like to:\n(a) display all orders\n(b) display orders since a specific date");
+		String option = "";
+		option = reader.readLine();
+		if (option == "a"){
+		String viewOrders = "SELECT * FROM cust_order";
+		try (PreparedStatement ps = connection.prepareStatement(viewOrders)) {
+			rs = ps.executeQuery();
+			
+			while(rs.next()) {
+				int order_id = rs.getInt("ORDER_ID");
+				//might be a date time
+				String date = rs.getString("TIMESTAMP");
+				String type = rs.getString("ORDER_TYPE");
+				//need to figure out how to do first and last name of customer
+				bool isComplete = rs.getBoolean("IS_COMPLETE");
+			
+				System.out.println("OrderID=" + order_id + " | Date Placed=" + date + " | OrderType=" + type 
+						+ " | IsComplete=" + isComplete);
+			}
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
+			System.out.println("Which order would you like to see in detail? Enter the number: ");
+			ResultSet orderChosen = null;
+			String whichOrder = "";
+			whichOrder = reader.readLine();
+			String orderNum = ("SELECT * FROM cust_order WHERE ORDER_ID = " + whichOrder);
+			try (PreparedStatement ps = connection.prepareStatement(viewOrders)) {
+				rs = ps.executeQuery()
+			
+			while(rs.next()) {
+				int order_id = rs.getInt("ORDER_ID");
+				//print all info this time
+				String date = rs.getString("TIMESTAMP");
+				String type = rs.getString("ORDER_TYPE");
+				bool isComplete = rs.getBoolean("IS_COMPLETE");
+			
+				System.out.println("OrderID=" + order_id + " | Date Placed=" + date + " | OrderType=" + type 
+						+ " | IsComplete=" + isComplete);
+			}
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
+		}
+		else if (option == "b"){
+			//same but only display from data
+		}
+		;
 		
 	}
 
