@@ -7,6 +7,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 /*
  * This file is where the front end magic happens.
@@ -113,13 +117,48 @@ public class Menu {
 	}
 	
 	
-	public static void viewCustomers()
+	public static void viewCustomers() throws SQLException, IOException
 	{
 		/*
 		 * Simply print out all of the customers from the database. 
+		 * 
+		 * try (Statement statement = connection.createStatement();
+                ResultSet rs = statement.executeQuery("SELECT * FROM Product")) {
+            Product p;
+
+            System.out.println("Product list:");
+            while (rs.next()) {
+                String code = rs.getString("Code");
+                String description = rs.getString("Description");
+                double price = rs.getDouble("ListPrice");
+
+                p = new Product(code, description, price);
+
+                printProduct(p);
+            }
+            System.out.println();
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
 		 */
-		
-		
+		Connection connection = DBConnector.make_connection();
+		ResultSet rs = null;
+		String viewCustomers = "SELECT * FROM customer";
+		try (PreparedStatement ps = connection.prepareStatement(viewCustomers)) {
+			rs = ps.executeQuery();
+			System.out.println("Customer_ID\tFirstName\tLastName\tPhone Number");
+			
+			while(rs.next()) {
+				int customer_id = rs.getInt("CUSTOMER_ID");
+				String Fname = rs.getString("FIRST_NAME");
+				String Lname = rs.getString("LAST_NAME");
+				long phone = rs.getLong("phone");
+				System.out.println("\t" + customer_id + "\t\t" + Fname + "\t\t" + Lname 
+						+ "\t\t" + phone);
+			}
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
 		
 		
 		
@@ -141,14 +180,38 @@ public class Menu {
 		 * 
 		 * Once you get the name and phone number (and anything else your design might have) add it to the DB
 		 */
+		Connection connection = DBConnector.make_connection();
 		String Fname = "";
 		String Lname = "";
-		long phone = 0;
+		String phone = "";
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("Enter the customer's first name");
 		Fname = reader.readLine();
 		System.out.println("Enter the customer's last name");
 		Lname = reader.readLine();
+		System.out.println("Enter the customer's phone number");
+		phone = reader.readLine();
+		
+		Random rand = new Random();
+		int upperbound = 1000;
+		int customer_id = rand.nextInt(upperbound);
+		Customer customer = new Customer(customer_id,Fname,Lname,phone);
+		
+		String makeCustomer = "INSERT INTO customer(CUSTOMER_ID,LAST_NAME,FIRST_NAME,PHONE)"
+				+ "VALUES"+ "(?,?,?,?)";
+		
+		try (PreparedStatement ps = connection.prepareStatement(makeCustomer)) {
+			ps.setInt(1,customer_id);
+			ps.setString(2, Lname);
+			ps.setString(3,Fname);
+			ps.setString(4,phone);
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
+		System.out.println(customer.toString());
+		
 		
 		
 
