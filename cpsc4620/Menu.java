@@ -4,6 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -32,7 +37,7 @@ public class Menu {
 	public static void main(String[] args) throws SQLException, IOException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-		System.out.println("Welcome to Taylor's Pizzeria!");
+		System.out.println("Welcome to Mark and Mackenzie's Pizzeria!");
 		
 		int menu_option = 0;
 
@@ -108,9 +113,10 @@ public class Menu {
 		 * 
 		 * apply the pizza to the order (including to the DB)
 		 * 
-		 * return to menu
+		 * return to menu1
+		 
 		 */
-		
+		Pizza p = buildPizza(1);
 		
 		
 		System.out.println("Finished adding order...Returning to menu...");
@@ -122,43 +128,12 @@ public class Menu {
 		/*
 		 * Simply print out all of the customers from the database. 
 		 * 
-		 * try (Statement statement = connection.createStatement();
-                ResultSet rs = statement.executeQuery("SELECT * FROM Product")) {
-            Product p;
-            System.out.println("Product list:");
-            while (rs.next()) {
-                String code = rs.getString("Code");
-                String description = rs.getString("Description");
-                double price = rs.getDouble("ListPrice");
-                p = new Product(code, description, price);
-                printProduct(p);
-            }
-            System.out.println();
-        } catch (SQLException e) {
-            System.out.println(e);
-        }
 		 */
-		Connection connection = DBConnector.make_connection();
-		ResultSet rs = null;
-		String viewCustomers = "SELECT * FROM customer";
-		try (PreparedStatement ps = connection.prepareStatement(viewCustomers)) {
-			rs = ps.executeQuery();
-			System.out.println("Customer_ID\tFirstName\tLastName\tPhone Number");
-			
-			while(rs.next()) {
-				int customer_id = rs.getInt("CUSTOMER_ID");
-				String Fname = rs.getString("FIRST_NAME");
-				String Lname = rs.getString("LAST_NAME");
-				long phone = rs.getLong("phone");
-				System.out.println("\t" + customer_id + "\t\t" + Fname + "\t\t" + Lname 
-						+ "\t\t" + phone);
-			}
-		} catch (SQLException e) {
-			System.out.println(e);
+		ArrayList<Customer> customers = DBNinja.getCustomerList();
+		
+		for (Customer c: customers) {
+			System.out.println(c.toString());
 		}
-		
-		
-		
 		
 	}
 	
@@ -177,7 +152,6 @@ public class Menu {
 		 * 
 		 * Once you get the name and phone number (and anything else your design might have) add it to the DB
 		 */
-		Connection connection = DBConnector.make_connection();
 		String Fname = "";
 		String Lname = "";
 		String phone = "";
@@ -193,30 +167,16 @@ public class Menu {
 		int upperbound = 1000;
 		int customer_id = rand.nextInt(upperbound);
 		Customer customer = new Customer(customer_id,Fname,Lname,phone);
+		DBNinja.addCustomer(customer);
 		
-		String makeCustomer = "INSERT INTO customer(CUSTOMER_ID,LAST_NAME,FIRST_NAME,PHONE)"
-				+ "VALUES"+ "(?,?,?,?)";
-		
-		try (PreparedStatement ps = connection.prepareStatement(makeCustomer)) {
-			ps.setInt(1,customer_id);
-			ps.setString(2, Lname);
-			ps.setString(3,Fname);
-			ps.setString(4,phone);
-			ps.executeUpdate();
-			ps.close();
-		} catch (SQLException e) {
-			System.out.println(e);
-		}
 		System.out.println(customer.toString());
 		
-		
-		
-
 	}
 
 	// View any orders that are not marked as completed
 	public static void ViewOrders() throws SQLException, IOException 
 	{
+		
 	/*
 	 * This should be subdivided into two options: print all orders (using simplified view) and print all orders (using simplified view) since a specific date.
 	 * 
@@ -225,56 +185,62 @@ public class Menu {
 	 * When I enter the order, print out all the information about that order, not just the simplified view.
 	 * 
 	 */
-	 	Connection connection = DBConnector.make_connection();
+		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+	 	
+		
+		Connection connection = DBConnector.make_connection();
 		ResultSet rs = null;
 		System.out.println("Would you like to:\n(a) display all orders\n(b) display orders since a specific date");
 		String option = "";
 		option = reader.readLine();
-		if (option == "a"){
-		String viewOrders = "SELECT * FROM cust_order";
-		try (PreparedStatement ps = connection.prepareStatement(viewOrders)) {
-			rs = ps.executeQuery();
-			
-			while(rs.next()) {
-				int order_id = rs.getInt("ORDER_ID");
-				//might be a date time
-				String date = rs.getString("TIMESTAMP");
-				String type = rs.getString("ORDER_TYPE");
-				//need to figure out how to do first and last name of customer
-				bool isComplete = rs.getBoolean("IS_COMPLETE");
-			
-				System.out.println("OrderID=" + order_id + " | Date Placed=" + date + " | OrderType=" + type 
-						+ " | IsComplete=" + isComplete);
-			}
-		} catch (SQLException e) {
-			System.out.println(e);
-		}
+		
+		if(option == "a") {
+			String viewOrders = "Select * FROM  cust_order";
+			try(PreparedStatement ps = connection.prepareStatement(viewOrders)){
+				rs = ps.executeQuery();
+				
+				while(rs.next()) {
+					int order_id = rs.getInt("ORDER_ID");
+					//might be a date time
+					String date = rs.getString("TIMESTAMP");
+					String type = rs.getString("ORDER_TYPE");
+					//need to figure out how to do forst and last name of customer
+					boolean isComplete = rs.getBoolean("IS_COMPLETE");
+					System.out.println("OrderID=" + order_id + " | Date Placed=" + date + " | OrderType=" + type 
+	 						+ " | IsComplete=" + isComplete);
+					
+				}
+			}catch (SQLException e) {
+	 			System.out.println(e);
+	 		}
 			System.out.println("Which order would you like to see in detail? Enter the number: ");
-			ResultSet orderChosen = null;
-			String whichOrder = "";
-			whichOrder = reader.readLine();
-			String orderNum = ("SELECT * FROM cust_order WHERE ORDER_ID = " + whichOrder);
-			try (PreparedStatement ps = connection.prepareStatement(viewOrders)) {
-				rs = ps.executeQuery()
-			
-			while(rs.next()) {
-				int order_id = rs.getInt("ORDER_ID");
-				//print all info this time
-				String date = rs.getString("TIMESTAMP");
-				String type = rs.getString("ORDER_TYPE");
-				bool isComplete = rs.getBoolean("IS_COMPLETE");
-			
-				System.out.println("OrderID=" + order_id + " | Date Placed=" + date + " | OrderType=" + type 
-						+ " | IsComplete=" + isComplete);
-			}
-		} catch (SQLException e) {
-			System.out.println(e);
-		}
-		}
-		else if (option == "b"){
-			//same but only display from data
-		}
-		;
+ 			ResultSet orderChosen = null;
+ 			String whichOrder = "";
+ 			whichOrder = reader.readLine();
+ 			String orderNum = ("SELECT * FROM cust_order WHERE ORDER_ID = " + whichOrder);
+ 			
+ 			try (PreparedStatement ps = connection.prepareStatement(viewOrders)) {
+ 				rs = ps.executeQuery();
+
+ 				while(rs.next()) {
+ 					int order_id = rs.getInt("ORDER_ID");
+ 					//print all info this time
+ 					String date = rs.getString("TIMESTAMP");
+ 					String type = rs.getString("ORDER_TYPE");
+ 					Boolean isComplete = rs.getBoolean("IS_COMPLETE");
+
+ 					System.out.println("OrderID=" + order_id + " | Date Placed=" + date + " | OrderType=" + type 
+ 						+ " | IsComplete=" + isComplete);
+ 				}
+ 			}
+ 			catch (SQLException e) {
+ 	 			System.out.println(e);
+ 	 		}
+ 	 		}
+			else if (option == "b"){
+ 			//same but only display from data
+ 		}
+ 		
 		
 	}
 
@@ -343,15 +309,94 @@ public class Menu {
 		 * Once the discounts are added, we can return the pizza
 		 */
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-		Pizza ret = null;
+		ArrayList<Topping> toppingSelection = new ArrayList<Topping>();
+		ArrayList<Topping> toppingList = DBNinja.getInventory();
+		Pizza p = null;
+		int size = 0;
+		int crustType = 0;
+		int topping = 0;
+		String Stopping = " ";
+		String Ssize = " ";
+		String scrustType = " ";
 		
+		System.out.println("What size pizza?");
+		System.out.println("1. Small\n2.Medium\n3. Large\n4. Extra Large\nEnter the corresponding number:");
+		size = Integer.parseInt(reader.readLine());
+		System.out.println("What type of crust do you want?");
+		System.out.println("1. Thin\n2. Original\n3. Pan\n,4. Gluten-Free\nEnter the corresponding number:");
+		crustType = Integer.parseInt(reader.readLine());
 		
+		switch(size) {
+			case 1: Ssize = DBNinja.size_s;
+				break;
+			case 2: Ssize = DBNinja.size_m;
+				break;
+			case 3: Ssize = DBNinja.size_l;
+				break;
+			case 4: Ssize = DBNinja.size_xl;
+		}
+		switch(crustType) {
+			case 1: scrustType = DBNinja.crust_thin;
+				break;
+			case 2: scrustType = DBNinja.crust_orig;
+				break;
+			case 3: scrustType = DBNinja.crust_pan;
+				break;
+			case 4: scrustType = DBNinja.crust_gf;
 		
+		}
+		//pizza object
+		//find max pizzaID
+				//find max 
+		int nextPizzaID = DBNinja.getMaxPizzaID() + 1;
+				
+				//find date
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu/MM/dd HH:mm:ss");
+		LocalDateTime now = LocalDateTime.now();
+				
+				
+		 p = new Pizza(nextPizzaID, Ssize, scrustType, orderID,"incomplete",dtf.format(now),0,0);
+		//getTopping List
 		
+		//toppings menu
 		
+		int topping_choice = 0;
+		String topping_extra = " ";
+		while(true) {
+			System.out.println("Printing current toppings list:\n");
+			DBNinja.printInventory();
+		    System.out.println("Which topping do you want to add? Enter the topping ID. Enter -1 to stop adding toppings.");
+		    topping_choice = Integer.parseInt(reader.readLine());
+		    if(topping_choice == -1) {
+		    	break;
+		    }
+		    System.out.println("Do you want to add extra topping? Enter y/n");
+		    topping_extra = reader.readLine();
+		    
+		   
+		  
+		    
+		    //find topping from topping list by using topping_choice
+			 //update topping count in topping table and topping_selection table
+		    //add to toppingSelection list
+		    
+		    for(Topping t: toppingList) {
+		    	if(topping_choice == t.getTopID()) {
+		    	
+		    		if(topping_extra.equals("y")) {
+		    			DBNinja.useTopping(p, t, true);
+		    			p.addToppings(t, true);
+		    			
+		    		}else {
+		    			DBNinja.useTopping(p, t, false);
+		    			p.addToppings(t, false);
+		    		}
+		    	}
+		    }
+		}
 		
-		
-		return ret;
+		System.out.println(p.toString());
+		return p;
 	}
 	
 	private static int getTopIndexFromList(int TopID, ArrayList<Topping> tops)
@@ -362,9 +407,6 @@ public class Menu {
 		 * 
 		 */
 		int ret = -1;
-		
-		
-		
 		return ret;
 	}
 	

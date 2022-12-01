@@ -113,13 +113,23 @@ public final class DBNinja {
 		 * It goes and fetches the largest PizzaID in the pizza table.
 		 * You wont need this function if you didn't forget to do that
 		 */
+		int maxID = 0;
+		ResultSet rs = null;
+		String findMaxID = "Select IFNULL(MAX(PIZZA_ID),0) MAX_ID FROM pizza;";
+		try (PreparedStatement ps = conn.prepareStatement(findMaxID)) {
+			rs = ps.executeQuery();
+			if(rs.next()) {
+				maxID = rs.getInt("MAX_ID");
+			}
+			
+			ps.close();
+		} catch (SQLException e) {
+			System.out.println(e);
+		}		
 		
-		
-		
-		
-		
+		conn.close();
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return -1;
+		return maxID;
 	}
 	
 	public static void useTopping(Pizza p, Topping t, boolean isDoubled) throws SQLException, IOException //this function will update toppings inventory in SQL and add entities to the Pizzatops table. Pass in the p pizza that is using t topping
@@ -133,6 +143,44 @@ public final class DBNinja {
 		 * that you've run out of that topping.
 		 */
 		
+		//calculate toppings used
+		int tID = t.getTopID();
+		String size = p.getSize();
+		double howMany = 0;
+		System.out.println("size "+ size);
+		switch(size) {
+			case size_s: howMany = t.getPerAMT();
+				break;
+			case size_m: howMany = t.getMedAMT();
+				break;
+			case size_l: howMany = t.getLgAMT();
+				break;
+			case size_xl: howMany = t.getXLAMT();
+		}
+		System.out.println("calling from useTopping " + howMany);
+		if(isDoubled) {
+			howMany *= 2;
+		}
+		//decrease topping in topping table
+		String decreaseTopping = "UPDATE topping SET CURR_INVENTORY "
+				+ "= CURR_INVENTORY -" + howMany +  " WHERE TOPPING_ID =" + tID;
+		
+		//connect to dbms
+		try (PreparedStatement ps = conn.prepareStatement(decreaseTopping)) {
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			System.out.println(e);
+		}	
+		
+		//update topping bridge table
+		String updateBridge = "UPDATE topping_selection ";
+		try(PreparedStatement ps = conn.prepareStatement(updateBridge)){
+			
+		}
+		
+		
+		
 		
 		
 		
@@ -140,6 +188,7 @@ public final class DBNinja {
 		
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 	
@@ -183,12 +232,20 @@ public final class DBNinja {
 		/*
 		 * This should add a customer to the database
 		 */
-				
-		
-		
-		
-		
+		String makeCustomer = "INSERT INTO customer(CUSTOMER_ID,LAST_NAME,FIRST_NAME,PHONE)"
+				+ "VALUES"+ "(?,?,?,?)";
+		try (PreparedStatement ps = conn.prepareStatement(makeCustomer)) {
+			ps.setInt(1,c.getCustID());
+			ps.setString(2, c.getLName());
+			ps.setString(3,c.getFName());
+			ps.setString(4,c.getPhone());
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			System.out.println(e);
+		}		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 
 
@@ -243,7 +300,20 @@ public final class DBNinja {
 		 * The topping list should also print in alphabetical order
 		 */
 		
-		
+		ResultSet rs = null;
+		String getInventory = "Select TOPPING_ID,TOPPING_NAME, CURR_INVENTORY from topping";
+		System.out.println("ID\tTopping\tCurrInv");
+		try(PreparedStatement ps = conn.prepareStatement(getInventory)){
+			rs = ps.executeQuery();
+			
+			while(rs.next()) {
+				int toppingID = rs.getInt("TOPPING_ID");
+				String toppingName = rs.getString("TOPPING_NAME");
+				int currInv = rs.getInt("CURR_INVENTORY");
+				System.out.println(toppingID+ "\t" + toppingName + "\t" + currInv);
+			}
+		} 
+		conn.close();
 		
 		
 		
@@ -261,7 +331,35 @@ public final class DBNinja {
 		 * should be returned in alphabetical order if you don't
 		 * plan on using a printInventory function
 		 */
+		ArrayList<Topping> toppingList = new ArrayList<Topping>();
+		ResultSet rs = null;
+		String getInventory = "Select TOPPING_ID,TOPPING_NAME,PRICE,COST, MIN_INVENTORY,"
+				+ " CURR_INVENTORY,"
+				+ "NUM_PER_S,NUM_PER_M,NUM_PER_L,NUM_PER_XL from topping";
+		try(PreparedStatement ps = conn.prepareStatement(getInventory)){
+			rs = ps.executeQuery();
+			
+			while(rs.next()) {
+				int toppingID = rs.getInt("TOPPING_ID");
+				String toppingName = rs.getString("TOPPING_NAME");
+				int currInv = rs.getInt("CURR_INVENTORY");
+				int minInv = rs.getInt("MIN_INVENTORY");
+				double price = rs.getDouble("PRICE");
+				double cost = rs.getDouble("COST");
+				int numPerS = rs.getInt("NUM_PER_S");
+				int numPerM = rs.getInt("NUM_PER_M");
+				int numPerL = rs.getInt("NUM_PER_L");
+				int numPerXL = rs.getInt("NUM_PER_XL");
+				Topping t = new Topping(toppingID,toppingName,numPerS, numPerM,
+						numPerL,numPerXL,price,cost,minInv,currInv);
+				toppingList.add(t);
+			}
+		} 
+		conn.close();
 
+		for(Topping t: toppingList) {
+			System.out.println(t.toString());
+		}
 		
 
 		
@@ -270,7 +368,7 @@ public final class DBNinja {
 		
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return null;
+		return toppingList;
 	}
 
 
@@ -426,14 +524,29 @@ public final class DBNinja {
 		 * return an arrayList of all the customers. These customers should
 		 *print in alphabetical order, so account for that as you see fit.
 		*/
-
-
-		
-		
-		
-		
+		ResultSet rs = null;
+		String viewCustomers = "SELECT * FROM customer";
+		try (PreparedStatement ps = conn.prepareStatement(viewCustomers)) {
+			rs = ps.executeQuery();
+			//System.out.println("Customer_ID\tFirstName\tLastName\tPhone Number");
+			
+			while(rs.next()) {
+				int customer_id = rs.getInt("CUSTOMER_ID");
+				String Fname = rs.getString("FIRST_NAME");
+				String Lname = rs.getString("LAST_NAME");
+				long phone = rs.getLong("phone");
+				 String ph = String.valueOf(phone);
+//				System.out.println("\t" + customer_id + "\t\t" + Fname + "\t\t" + Lname 
+//						+ "\t\t" + phone);
+				Customer c = new Customer(customer_id, Fname, Lname, ph);
+				custs.add(c);
+			}
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 		return custs;
 	}
 	
