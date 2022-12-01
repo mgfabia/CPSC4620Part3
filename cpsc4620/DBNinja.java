@@ -145,6 +145,7 @@ public final class DBNinja {
 		
 		//calculate toppings used
 		int tID = t.getTopID();
+		int extra = 0;
 		String size = p.getSize();
 		double howMany = 0;
 		System.out.println("size "+ size);
@@ -159,6 +160,7 @@ public final class DBNinja {
 		}
 		System.out.println("calling from useTopping " + howMany);
 		if(isDoubled) {
+			extra = 1;
 			howMany *= 2;
 		}
 		//decrease topping in topping table
@@ -174,18 +176,15 @@ public final class DBNinja {
 		}	
 		
 		//update topping bridge table
-		String updateBridge = "UPDATE topping_selection ";
+		String updateBridge = "INSERT INTO topping_selection (TOPPING_ID,PIZZA_ID,EXTRA)"
+				+ "VALUES(?,?,?,?)";
 		try(PreparedStatement ps = conn.prepareStatement(updateBridge)){
-			
+			ps.setInt(1,t.getTopID());
+			ps.setInt(2, p.getPizzaID());
+			ps.setInt(3, extra);
+			ps.executeUpdate();
+			ps.close();
 		}
-		
-		
-		
-		
-		
-		
-		
-		
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		conn.close();
