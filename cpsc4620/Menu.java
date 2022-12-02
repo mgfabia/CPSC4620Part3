@@ -112,13 +112,14 @@ public class Menu {
 		 * 
 		 * return to menu
 		 */
-		Order order = null;
-		int orderId = DBNinja.getNextOrderID();
+		Order order = new Order(0, 0, "dinein", "n ", 0, 0, 0);
+		int orderId = DBNinja.getNextOrderID() + 1;
+		System.out.println(orderId);
 		order.setOrderID(orderId);
-		System.out.println("Is thia order for an existing customer? Answer y/n: ");
+		System.out.println("Is this order for an existing customer? Answer y/n: ");
 		String existing = reader.readLine();
 
-		if (existing == "y"){
+		if (existing.equals("y")){
 			System.out.println("Here is a list of the current customers");
 			ArrayList<Customer> custList = DBNinja.getCustomerList();
 			for (Customer cust: custList){
@@ -127,14 +128,24 @@ public class Menu {
 			System.out.println("Which customer is this order for? Enter ID Number ");
 			int custID = Integer.parseInt(reader.readLine());
 			order.setCustID(custID);
+			DBNinja.addOrder(order);
 			System.out.println("Is this order for: \n1.)Dine-in\n2.)Pick-up\n3.)Delivery\nEnter to corresponding number\n ");
 			int orderType = Integer.parseInt(reader.readLine());
 			if (orderType == 1){
 				System.out.println("Enter the table number");
 				int tableNum = Integer.parseInt(reader.readLine());
-				buildPizza(orderId);
-				DineinOrder dineinOrder = (DineinOrder) order;
-				((DineinOrder) order).setTableNum(tableNum);
+				Pizza p = buildPizza(orderId);
+				order.setCustID(DBNinja.getNextCustomerID());
+				order.setDate(p.getPizzaDate());
+				order.setBusPrice(p.getBusPrice());
+				order.setCustPrice(p.getCustPrice());
+				order.setIsComplete(p.getPizzaState());
+				//DineinOrder dineinOrder = new DineinOrder(order.getOrderID,..., tablenum);
+				DineinOrder dineinOrder = new DineinOrder(order.getOrderID(),order.getCustID(),
+						order.getDate(), order.getCustPrice(), order.getBusPrice(), order.getIsComplete(), tableNum);
+				
+				
+				
 				DBNinja.addOrder(dineinOrder);
 
 			}
@@ -156,29 +167,60 @@ public class Menu {
 		}
 		else{
 			EnterCustomer();
+			order.setCustID(DBNinja.getNextCustomerID());
+			DBNinja.addOrder(order);
+			
 			System.out.println("Is this order for: \n1.)Dine-in\n2.)Pick-up\n3.)Delivery\nEnter to corresponding number\n ");
 			int orderType = Integer.parseInt(reader.readLine());
+			
 			if (orderType == 1){
-				buildPizza(orderId);
-				DineinOrder dineinOrder = (DineinOrder) order;
-				DBNinja.addOrder(dineinOrder);
-
+				System.out.println("Enter the table number");
+				int tableNum = Integer.parseInt(reader.readLine());
+				
+				//populate order with correct values
+				Pizza p = buildPizza(orderId);
+			
+				order.setDate(p.getPizzaDate());
+				order.setBusPrice(p.getBusPrice());
+				order.setCustPrice(p.getCustPrice());
+				order.setIsComplete(p.getPizzaState());
+				order.setOrderType(DBNinja.dine_in);
+				DBNinja.updateOrder(order);
+				
+				//create dinein type order and addd tablenum
+				DineinOrder dineinOrder = new DineinOrder(order.getOrderID(),order.getCustID(),
+						order.getDate(), order.getCustPrice(), order.getBusPrice(), order.getIsComplete(), tableNum);
+				DBNinja.addSubOrder(dineinOrder);
 			}
 			if (orderType == 2){
-				buildPizza(orderId);
-				PickupOrder pickup = (PickupOrder) order;
-				DBNinja.addOrder(pickup);
+				int isPickedUp = 0;
+				Pizza p = buildPizza(orderId);
+				order.setDate(p.getPizzaDate());
+				order.setBusPrice(p.getBusPrice());
+				order.setCustPrice(p.getCustPrice());
+				order.setIsComplete(p.getPizzaState());
+				order.setOrderType(DBNinja.pickup);
+				DBNinja.updateOrder(order);
+				PickupOrder pickup = new PickupOrder(order.getOrderID(),order.getCustID(),order.getDate(),order.getCustPrice(),
+						order.getBusPrice(),isPickedUp,order.getIsComplete());
+						
+				DBNinja.addSubOrder(pickup);
 			}
 			if (orderType == 3){
-				buildPizza(orderId);
-				DeliveryOrder deliv = (DeliveryOrder) order;
-				DBNinja.addOrder(deliv);
+				System.out.println("What address would you like to enter?");
+				String address = reader.readLine();
+				Pizza p = buildPizza(orderId);
+				order.setDate(p.getPizzaDate());
+				order.setBusPrice(p.getBusPrice());
+				order.setCustPrice(p.getCustPrice());
+				order.setIsComplete(p.getPizzaState());
+				order.setOrderType(DBNinja.delivery);
+				DBNinja.updateOrder(order);
+				DeliveryOrder deliv = new DeliveryOrder(order.getOrderID(), order.getCustID(), order.getDate(), order.getCustPrice(), order.getBusPrice()
+						, order.getIsComplete(), address);
+				DBNinja.addSubOrder(deliv);
 			}
-
-
 		}
-		
-		
 		System.out.println("Finished adding order...Returning to menu...");
 	}
 
@@ -212,6 +254,8 @@ public class Menu {
 		 *
 		 * Once you get the name and phone number (and anything else your design might have) add it to the DB
 		 */
+		
+		int customerID = DBNinja.getNextCustomerID() + 1;
 		String Fname = "";
 		String Lname = "";
 		String phone = "";
@@ -223,10 +267,8 @@ public class Menu {
 		System.out.println("Enter the customer's phone number");
 		phone = reader.readLine();
 
-		Random rand = new Random();
-		int upperbound = 1000;
-		int customer_id = rand.nextInt(upperbound);
-		Customer customer = new Customer(customer_id,Fname,Lname,phone);
+		
+		Customer customer = new Customer(customerID,Fname,Lname,phone);
 		DBNinja.addCustomer(customer);
 
 		System.out.println(customer.toString());
@@ -416,7 +458,7 @@ public class Menu {
 		LocalDateTime now = LocalDateTime.now();
 
 
-		p = new Pizza(nextPizzaID, Ssize, scrustType, orderID,"incomplete",dtf.format(now),0,0);
+		p = new Pizza(nextPizzaID, Ssize, scrustType, orderID,0,dtf.format(now),0,0);
 		//getTopping List
 
 		//toppings menu

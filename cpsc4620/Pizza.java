@@ -18,7 +18,7 @@ public class Pizza
 	private String CrustType;
 	private String Size;
 	private int OrderID;
-	private String PizzaState;
+	private int PizzaState;
 	private String PizzaDate;
 	private double CustPrice;
 	private double BusPrice;
@@ -31,7 +31,7 @@ public class Pizza
 	private boolean[] isToppingDoubled;//There's definitely a better way to do this, so you're welcome to try and find it.
 	
 	
-	public Pizza(int pizzaID, String size, String crustType, int orderID, String pizzaState, String pizzaDate,
+	public Pizza(int pizzaID, String size, String crustType, int orderID, int pizzaState, String pizzaDate,
 			double custPrice, double busPrice) {
 		PizzaID = pizzaID;
 		CrustType = crustType;
@@ -70,7 +70,7 @@ public class Pizza
 
 
 
-	public String getPizzaState() {
+	public int getPizzaState() {
 		return PizzaState;
 	}
 
@@ -130,7 +130,7 @@ public class Pizza
 
 
 
-	public void setPizzaState(String pizzaState) {
+	public void setPizzaState(int pizzaState) {
 		PizzaState = pizzaState;
 	}
 
