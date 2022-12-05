@@ -1,3 +1,4 @@
+/*Mark Fabian, Mackenzie Blue*/
 package cpsc4620;
 
 public class DineinOrder extends Order{

@@ -1,10 +1,15 @@
+
+/*Mark Fabian, Mackenzie Blue*/
 package cpsc4620;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 public class Order 
 {
+	
+	
 	/*
 	 * 
 	 * Standard Java object class. 
@@ -13,8 +18,6 @@ public class Order
 	 * Remember that changes to this class will affect your subtype classes.
 	 * 
 	 * */
-	
-	
 	private int OrderID;
 	private int CustID;
 	private String OrderType;
@@ -123,6 +126,13 @@ public class Order
 	public void setDate(String date) {
 		Date = date;
 	}
+	public void convertDate(String date) {
+		
+		String conv1 = date.replace("-", "");
+		String conv2 = conv1.replace(":", "");
+		Date = conv2.replace(" ", "");
+		
+	}
 
 
 	public void setCustPrice(double custPrice) {
@@ -181,6 +191,8 @@ public class Order
 			return "ERROR IN SIMPLE PRINT CUSTOMER";
 		}
 	}
+
+	
 
 	
 	

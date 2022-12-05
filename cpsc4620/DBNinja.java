@@ -1,3 +1,4 @@
+/*Mark Fabian, Mackenzie Blue*/
 package cpsc4620;
 
 import java.io.IOException;
@@ -172,6 +173,67 @@ public final class DBNinja {
 		conn.close();
 		
 	}
+	
+	
+	
+	
+	public static Order getSubOrders(Order o) throws SQLException, IOException {
+		   connect_to_db();
+		   if (o instanceof DineinOrder) {
+
+		      ResultSet rs = null;
+		      String getOrder = "SELECT ORDER_ID, CUSTOMER_ID, ORDER_TYPE, TOTAL_PRICE, TOTAL_COST, TIME_STAMP, IS_COMPLETE, TABLE_NUM from dinein";
+		      try (PreparedStatement ps2 = conn.prepareStatement(getOrder)) {
+		         rs = ps2.executeQuery();
+		         int orderID = rs.getInt("ORDER_ID");
+		         int custID = rs.getInt("CUSTOMER_ID");
+		         String orderType = rs.getString("ORDER_TYPE");
+		         double price = rs.getDouble("TOTAL_PRICE");
+		         double cost = rs.getDouble("TOTAL_COST");
+		         String time = rs.getString("TIME_STAMP");
+		         int isComp = rs.getInt("IS_COMPLETE");
+		         int tableNum = rs.getInt("TABLE_NUM");
+		         DineinOrder dineinOrder = new DineinOrder(orderID,custID, time, price, cost, isComp, tableNum);
+		         return dineinOrder;
+		      }
+
+		      catch (SQLException e) {
+		         System.out.println(e);
+		      }
+		   }
+
+		   if (o instanceof DeliveryOrder) {
+			      ResultSet rs = null;
+			      String getOrder = "SELECT ORDER_ID, CUSTOMER_ID, ORDER_TYPE, TOTAL_PRICE, TOTAL_COST, TIME_STAMP, IS_COMPLETE,ADDRESS from delivery";
+			      try (PreparedStatement ps2 = conn.prepareStatement(getOrder)) {
+			         rs = ps2.executeQuery();
+			         int orderID = rs.getInt("ORDER_ID");
+			         int custID = rs.getInt("CUSTOMER_ID");
+			         String orderType = rs.getString("ORDER_TYPE");
+			         double price = rs.getDouble("TOTAL_PRICE");
+			         double cost = rs.getDouble("TOTAL_COST");
+			         String time = rs.getString("TIME_STAMP");
+			         int isComp = rs.getInt("IS_COMPLETE");
+			         String addy = rs.getString("ADDRESS");
+			         DeliveryOrder delivery = new DeliveryOrder(orderID,custID, time, price, cost, isComp, addy);
+			         return delivery;
+			      }
+
+			      catch (SQLException e) {
+			         System.out.println(e);
+			      }
+			   conn.close();
+			   
+			  
+			 
+
+		}
+		return o;
+	}
+	
+	
+	
+	
 
 	public static void addPizza(Pizza p) throws SQLException, IOException {
 		connect_to_db();
@@ -180,7 +242,22 @@ public final class DBNinja {
 		 * adding pizza discounts to that bridge table and instance of topping usage to
 		 * that bridge table if you have't accounted for that somewhere else.
 		 */
-
+		String addPOrder = "INSERT INTO pizza(PIZZA_ID,ORDER_ID,PIZZA_SIZE, CRUST_TYPE,"
+				+ " PIZZA_COST, PIZZA_PRICE, PIZZA_STATE,TIME_STAMP)" + "VALUES" + "(?,?,?,?,?,?,?,?)";
+		try (PreparedStatement ps = conn.prepareStatement(addPOrder)) {
+			ps.setInt(1,p.getPizzaID());
+			ps.setInt(2, p.getOrderID());
+			ps.setString(3, p.getSize());
+			ps.setString(4, p.getCrustType());
+			ps.setDouble(5,  p.getBusPrice());
+			ps.setDouble(6, p.getCustPrice());
+			ps.setInt(7, p.getPizzaState());
+			ps.setString(8, p.getPizzaDate());
+			ps.executeUpdate();
+			ps.close();
+		}
+		
+		conn.close();
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
 
@@ -276,6 +353,19 @@ public final class DBNinja {
 		 * Helper function I used to update the pizza-discount bridge table. You might
 		 * use this, you might not depending on where / how to want to update this table
 		 */
+		//discountID and orderID(from pizza)
+		String discount = "UPDATE dis_to_pizza_bridge SET DISCOUNT_ID " + " = DISCOUNT_ID + 1" 
+				+ " WHERE PIZZA_ID =" + p.getPizzaID();
+
+		// connect to dbms
+		try (PreparedStatement ps = conn.prepareStatement(discount)) {
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
+		conn.close();
+		
 
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
@@ -286,6 +376,17 @@ public final class DBNinja {
 		 * Helper function I used to update the pizza-discount bridge table. You might
 		 * use this, you might not depending on where / how to want to update this table
 		 */
+		String discount = "UPDATE dis_to_order_bridge SET DISCOUNT_ID " + " = DISCOUNT_ID + 1" 
+				+ " WHERE PIZZA_ID =" + o.getOrderID();
+
+		// connect to dbms
+		try (PreparedStatement ps = conn.prepareStatement(discount)) {
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
+		conn.close();
 
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
@@ -316,6 +417,20 @@ public final class DBNinja {
 		 * add code to mark an order as complete in the DB. You may have a boolean field
 		 * for this, or maybe a completed time timestamp. However you have it.
 		 */
+		
+		String makeCustomer = "UPDATE cust_order SET IS_COMPLETE=? WHERE ORDER_ID =?";
+		try (PreparedStatement ps = conn.prepareStatement(makeCustomer)) {
+		   ps.setInt(1, 1);
+		   ps.setInt(2, o.getOrderID());
+		   ps.executeUpdate();
+		   ps.close();
+		} catch (SQLException e) {
+		   System.out.println(e);
+		}
+		// DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
+
+
 
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
@@ -325,6 +440,17 @@ public final class DBNinja {
 		/*
 		 * Adds toAdd amount of topping to topping t.
 		 */
+		String addInv = "UPDATE topping SET CURR_INVENTORY=? WHERE TOPPING_ID =?";
+		   try (PreparedStatement ps = conn.prepareStatement(addInv)) {
+		   ps.setInt(1, t.getCurINVT() +(int) toAdd);
+		   ps.setInt(2, t.getTopID());
+		   ps.executeUpdate();
+		   ps.close();
+		} catch (SQLException e) {
+		   System.out.println(e);
+		}
+		// DO NOT FORGET TO CLOSE YOUR CONNECTION
+		   conn.close();
 
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
@@ -391,9 +517,9 @@ public final class DBNinja {
 		}
 		conn.close();
 
-		for (Topping t : toppingList) {
-			System.out.println(t.toString());
-		}
+//		for (Topping t : toppingList) {
+//			System.out.println(t.toString());
+//		}
 
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return toppingList;
@@ -408,23 +534,198 @@ public final class DBNinja {
 		 * dineinOrders, deliveryOrders, and pickupOrders.
 		 *
 		 * Also, like toppings, whenever we print out the orders using menu function 4
-		 * and 5 these orders should print in order from newest to oldest.
+		 * and 5 the4se orders should print in order from newest to oldest.
 		 */
-
+		
+		ArrayList<Order> orderList = new ArrayList<Order>();
+		ResultSet rs = null;
+		String getOrders = "Select ORDER_ID, CUSTOMER_ID, ORDER_TYPE, TOTAL_PRICE, TOTAL_COST, TIME_STAMP, IS_COMPLETE from cust_order";
+		try (PreparedStatement ps = conn.prepareStatement(getOrders)) {
+		   rs = ps.executeQuery();
+		   while (rs.next()) {
+		      int orderID = rs.getInt("ORDER_ID");
+		      int custID = rs.getInt("CUSTOMER_ID");
+		      String orderType = rs.getString("ORDER_TYPE");
+		      double price = rs.getDouble("TOTAL_PRICE");
+		      double cost = rs.getDouble("TOTAL_COST");
+		      String time = rs.getString("TIME_STAMP");
+		      int isComp = rs.getInt("IS_COMPLETE");
+		      if (isComp == 0) {
+		    	  Order o = new Order(orderID,custID,orderType,time,price,cost,isComp);
+		    	  orderList.add(o);
+		      }
+		     
+		      
+		   }
+		}
+		conn.close();
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return null;
+		return orderList;
+		
 	}
+	
+	public static DineinOrder getDineinOrder(Order o) throws SQLException, IOException {
+		   connect_to_db();
+		   ResultSet rs1 = null;
+		   String getROrder = "SELECT ORDER_ID, CUSTOMER_ID, ORDER_TYPE, TOTAL_PRICE, TOTAL_COST, TIME_STAMP, IS_COMPLETE from cust_order WHERE ORDER_ID=?";
+		   try (PreparedStatement ps1 = conn.prepareStatement(getROrder)) {
 
-	public static ArrayList<Order> sortOrders(ArrayList<Order> list) {
+		      ps1.setInt(1, o.getOrderID());
+		      ps1.executeQuery();
+		      rs1 = ps1.executeQuery();
+		      while (rs1.next()) {
+		         int orderID = rs1.getInt("ORDER_ID");
+		         int custID = rs1.getInt("CUSTOMER_ID");
+		         String orderType = rs1.getString("ORDER_TYPE");
+		         double price = rs1.getDouble("TOTAL_PRICE");
+		         double cost = rs1.getDouble("TOTAL_COST");
+		         String time = rs1.getString("TIME_STAMP");
+		         int isComp = rs1.getInt("IS_COMPLETE");
+		         ResultSet rs = null;
+		         String getOrder = "SELECT TABLE_NUM from dinein WHERE ORDER_ID=?";
+		         try (PreparedStatement ps2 = conn.prepareStatement(getOrder)) {
+		            ps2.setInt(1, o.getOrderID());
+		            ps2.executeQuery();
+		            rs = ps2.executeQuery();
+		            while (rs.next()) {
+		               int tableNum = rs.getInt("TABLE_NUM");
+		               DineinOrder dineinOrder = new DineinOrder(orderID, custID, time, price, cost, isComp, tableNum);
+		               return dineinOrder;
+		            }
+
+		         } catch (SQLException e) {
+		            System.out.println(e);
+		         }
+		      }
+		   }
+		    catch(SQLException e){
+		         System.out.println(e);
+		      }
+
+		   return null;
+		}
+	
+	
+	public static PickupOrder getPickupOrder(Order o) throws SQLException, IOException {
+		   connect_to_db();
+		   ResultSet rs1 = null;
+		   String getROrder = "SELECT ORDER_ID, CUSTOMER_ID, ORDER_TYPE, TOTAL_PRICE, TOTAL_COST, TIME_STAMP, IS_COMPLETE from cust_order WHERE ORDER_ID=?";
+		   try (PreparedStatement ps1 = conn.prepareStatement(getROrder)) {
+
+		      ps1.setInt(1, o.getOrderID());
+		      ps1.executeQuery();
+		      rs1 = ps1.executeQuery();
+		      while (rs1.next()) {
+		         int orderID = rs1.getInt("ORDER_ID");
+		         int custID = rs1.getInt("CUSTOMER_ID");
+		         String orderType = rs1.getString("ORDER_TYPE");
+		         double price = rs1.getDouble("TOTAL_PRICE");
+		         double cost = rs1.getDouble("TOTAL_COST");
+		         String time = rs1.getString("TIME_STAMP");
+		         int isComp = rs1.getInt("IS_COMPLETE");
+		         ResultSet rs = null;
+		         String getOrder = "SELECT IS_PICKED from pickup WHERE ORDER_ID=?";
+		         try (PreparedStatement ps2 = conn.prepareStatement(getOrder)) {
+		            ps2.setInt(1, o.getOrderID());
+		            ps2.executeQuery();
+		            rs = ps2.executeQuery();
+		            while (rs.next()) {
+		               int isPicked = rs.getInt("IS_PICKED");
+		               PickupOrder pickupOrder = new PickupOrder(orderID, custID, time, price, cost, isPicked, isComp);
+		               return pickupOrder;
+		            }
+
+		         } catch (SQLException e) {
+		            System.out.println(e);
+		         }
+		      }
+		   }
+		   catch(SQLException e){
+		      System.out.println(e);
+		   }
+
+		   return null;
+		}
+	
+	
+	
+	public static DeliveryOrder getDeliveryOrder(Order o) throws SQLException, IOException {
+		   connect_to_db();
+		   ResultSet rs1 = null;
+		   String getROrder = "SELECT ORDER_ID, CUSTOMER_ID, ORDER_TYPE, TOTAL_PRICE, TOTAL_COST, TIME_STAMP, IS_COMPLETE from cust_order WHERE ORDER_ID=?";
+		   try (PreparedStatement ps1 = conn.prepareStatement(getROrder)) {
+
+		      ps1.setInt(1, o.getOrderID());
+		      ps1.executeQuery();
+		      rs1 = ps1.executeQuery();
+		      while (rs1.next()) {
+		         int orderID = rs1.getInt("ORDER_ID");
+		         int custID = rs1.getInt("CUSTOMER_ID");
+		         String orderType = rs1.getString("ORDER_TYPE");
+		         double price = rs1.getDouble("TOTAL_PRICE");
+		         double cost = rs1.getDouble("TOTAL_COST");
+		         String time = rs1.getString("TIME_STAMP");
+		         int isComp = rs1.getInt("IS_COMPLETE");
+		         ResultSet rs = null;
+		         String getOrder = "SELECT ADDRESS from delivery WHERE ORDER_ID=?";
+		         try (PreparedStatement ps2 = conn.prepareStatement(getOrder)) {
+		            ps2.setInt(1, o.getOrderID());
+		            ps2.executeQuery();
+		            rs = ps2.executeQuery();
+		            while (rs.next()) {
+		               String address = rs.getString("ADDRESS");
+		               DeliveryOrder deliveryOrder = new DeliveryOrder(orderID, custID, time, price, cost, isComp, address);
+		               return deliveryOrder;
+		            }
+
+		         } catch (SQLException e) {
+		            System.out.println(e);
+		         }
+		      }
+		   }
+		   catch(SQLException e){
+		      System.out.println(e);
+		   }
+
+		   return null;
+		}
+
+
+	public static ArrayList<Order> sortOrders(ArrayList<Order> notSortedlist) {
 		/*
 		 * This was a function that I used to sort my arraylist based on date. You may
 		 * or may not need this function depending on how you fetch your orders from the
 		 * DB in the getCurrentOrders function.
 		 */
-
+		ArrayList<Order> sorted = new ArrayList<Order>();
+		
+		//change strings to date objects in arraylist
+		//create sorting class
+		for(Order o: notSortedlist) {
+			o.convertDate(o.getDate());
+		}
+		Collections.sort(notSortedlist,new orderSort());
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return null;
+		return notSortedlist;
 
+	}
+	public static ArrayList<Order> restrictOrders(ArrayList<Order> notRestrictedList, String date){
+		ArrayList<Order> restricted = new ArrayList<Order>();
+	
+		Long num2 = Long.parseLong(date);
+		
+		for(Order o: notRestrictedList) {
+			String trunc = o.getDate();
+			String trunc2 = trunc.substring(0,8);
+			Long num1 = Long.parseLong(trunc2);
+			System.out.println("this should be trunc " + num1);
+			if(num2 < num1){
+				restricted.add(o);
+			}
+			
+		}
+		
+		return restricted;
 	}
 
 	public static boolean checkDate(int year, int month, int day, String dateOfOrder) {
@@ -498,7 +799,29 @@ public final class DBNinja {
 		ArrayList<Discount> discs = new ArrayList<Discount>();
 		connect_to_db();
 		// returns a list of all the discounts.
+		
+		
+		String query = "SELECT * FROM discount";
+	
+		ResultSet rs = null;
+		
+		try (PreparedStatement ps = conn.prepareStatement(query)) {
+			rs = ps.executeQuery();
+	
 
+			while (rs.next()) {
+				int discountID = rs.getInt("DISCOUNT_ID");
+				String discountName = rs.getString("DISCOUNT_NAME");
+				double dollarAMT = rs.getDouble("DISCOUNTAMT");
+				boolean ispercent = rs.getBoolean("ISPERCENT");
+				Discount d = new Discount(discountID,discountName,dollarAMT,ispercent);
+				discs.add(d);
+			}
+		} catch (SQLException e) {
+			System.out.println(e);
+		}
+		
+		conn.close();
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return discs;
 	}
@@ -593,6 +916,24 @@ public final class DBNinja {
 		 * I'm not picky about how they print (other than that it should be in
 		 * alphabetical order by name), just make sure it's readable.
 		 */
+		System.out.println("Topping_ID\tTopping_Name\tTopping_Count");
+		ResultSet rs = null;
+		String printTops = "SELECT * FROM ToppingPopularity;";
+		try (PreparedStatement ps = conn.prepareStatement(printTops)) {
+			rs  = ps.executeQuery();
+			while(rs.next()) {
+				int topping_id = rs.getInt("TOPPING_ID");
+				String toppingName = rs.getString("TOPPING_NAME");
+				int topping_count = rs.getInt("TOPPINGCOUNT");
+				System.out.println(topping_id+ "\t" + toppingName + "\t" + topping_count);
+			}
+		   ps.executeQuery();
+		} catch (SQLException e) {
+		   System.out.println(e);
+		}
+
+		conn.close();
+	
 
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
@@ -606,6 +947,25 @@ public final class DBNinja {
 		 *
 		 * I'm not picky about how they print, just make sure it's readable.
 		 */
+		System.out.println("Pizza_Size\tCrust_Type\tNet Profit");
+		ResultSet rs = null;
+		String printTops = "SELECT * FROM ProfitByPizza;";
+		try (PreparedStatement ps = conn.prepareStatement(printTops)) {
+			rs  = ps.executeQuery();
+			while(rs.next()) {
+				String pizza_size = rs.getString("PIZZA_SIZE");
+				String crust_type = rs.getString("CRUST_TYPE");
+				int netProfit = rs.getInt("ROUND(SUM(PIZZA_PRICE-PIZZA_COST),2)");
+				
+				System.out.println(pizza_size+ "\t" + crust_type + "\t" + netProfit);
+			}
+		   ps.executeQuery();
+		} catch (SQLException e) {
+		   System.out.println(e);
+		}
+
+		conn.close();
+		
 
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
@@ -619,6 +979,30 @@ public final class DBNinja {
 		 *
 		 * I'm not picky about how they print, just make sure it's readable.
 		 */
+		 
+		   // DO NOT FORGET TO CLOSE YOUR CONNECTION
+		
+			System.out.println("CustomerType\tOrderDate\tTotalOrderPrice\tTotalOrderCost\tProfit");
+			ResultSet rs = null;
+			String printTops = "SELECT * FROM ProfitByOrderType;";
+			try (PreparedStatement ps = conn.prepareStatement(printTops)) {
+				rs  = ps.executeQuery();
+				while(rs.next()) {
+					String customerType = rs.getString("CustomerType");
+					String orderDate = rs.getString("OrderDate");
+					double totalOrderPrice = rs.getDouble("TotalOrderPrice");
+					double totalOrderCost = rs.getDouble("TotalOrderCost");
+					double profit = rs.getDouble("Profit");
+					System.out.println(customerType + "\t" + orderDate + "\t" + totalOrderPrice +
+							"\t" + totalOrderCost + "\t" + profit);
+				}
+			   ps.executeQuery();
+			} catch (SQLException e) {
+			   System.out.println(e);
+			}
+
+			conn.close();
+		
 
 		// DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
